@@ -1,5 +1,5 @@
 -- Load the films and their directors and producers
-LOAD CSV WITH HEADERS FROM "file:///films.csv" 
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/films.csv" 
     AS row 
     UNWIND split(row.producer, ",") AS producer
     MERGE (f:Film {name: trim(row.title), 
@@ -12,7 +12,7 @@ LOAD CSV WITH HEADERS FROM "file:///films.csv"
 
 
 -- Load the characters
-LOAD CSV WITH HEADERS FROM "file:///characters.csv" 
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/characters.csv" 
     AS row
     MERGE (c:Character {name: row.name})
     FOREACH(
@@ -46,7 +46,7 @@ LOAD CSV WITH HEADERS FROM "file:///characters.csv"
 
 
 -- Load the planets
-LOAD CSV WITH HEADERS FROM "file:///planets.csv" 
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/planets.csv" 
     AS row
     UNWIND split(row.terrain, ',') AS terrain
     UNWIND split(row.climate, ',') AS climate
@@ -70,7 +70,7 @@ LOAD CSV WITH HEADERS FROM "file:///planets.csv"
 
 -- Load the organizations
 
-LOAD CSV WITH HEADERS FROM "file:///organizations.csv" 
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/organizations.csv" 
     AS row
     UNWIND split(row.leader, ",") AS leader
     UNWIND split(row.members, ",") AS member
@@ -82,10 +82,10 @@ LOAD CSV WITH HEADERS FROM "file:///organizations.csv"
     MERGE (o)-[:APPEARS_IN]->(f)
     FOREACH(
         it IN 
-            CASE trim(row.afiliation) 
+            CASE trim(row.affiliation) 
                 WHEN "None" 
                 THEN null 
-                ELSE trim(row.afiliation) 
+                ELSE trim(row.affiliation) 
             END | 
             MERGE (a:Affiliation {name: it})
             MERGE (o)-[:BELONGS_TO]->(a)
@@ -96,7 +96,7 @@ LOAD CSV WITH HEADERS FROM "file:///organizations.csv"
         o.description = row.description;
 
 -- Load the species
-LOAD CSV WITH HEADERS FROM "file:///species.csv" 
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/species.csv" 
     AS row
     MERGE (s:Species {name: row.name})
     FOREACH(
@@ -122,7 +122,7 @@ LOAD CSV WITH HEADERS FROM "file:///species.csv"
         s.language = row.language;
 
 -- Load the Vehicles
-LOAD CSV WITH HEADERS FROM "file:///vehicles.csv" 
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/vehicles.csv" 
     AS row
     UNWIND CASE row.pilots 
             WHEN "None" THEN NULL 
@@ -150,7 +150,7 @@ LOAD CSV WITH HEADERS FROM "file:///vehicles.csv"
 
 
 -- Load the Quotes and its relations with their author and film where they used it
-LOAD CSV WITH HEADERS FROM "file:///quotes.csv" 
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/quotes.csv" 
     AS row 
     MERGE (q:Quote {text: trim(row.quote)})
     MERGE (c:Character {name: trim(row.character_name)})
@@ -159,7 +159,7 @@ LOAD CSV WITH HEADERS FROM "file:///quotes.csv"
     MERGE (q)-[:SAID_IN]->(f);
 
 -- Load the Starships and its related data
-LOAD CSV WITH HEADERS FROM "file:///starships.csv" 
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/starships.csv" 
     AS row 
     UNWIND CASE row.pilots 
             WHEN "None" THEN null 
@@ -186,7 +186,7 @@ LOAD CSV WITH HEADERS FROM "file:///starships.csv"
         s.hyperdrive_rating = toFloatOrNull(row.hyperdrive_rating);
 
 -- Load the Weapons and their related data
-LOAD CSV WITH HEADERS FROM "file:///weapons.csv" 
+LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/weapons.csv" 
     AS row 
     UNWIND CASE row.manufacturer WHEN "Various" THEN NULL ELSE split(row.manufacturer, ",") END AS manufacturer
     UNWIND split(row.type, "/") AS weapon_type
