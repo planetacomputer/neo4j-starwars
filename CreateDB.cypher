@@ -1,4 +1,10 @@
--- Load the films and their directors and producers
+create constraint FOR (p:Species) REQUIRE p.id is unique;
+create constraint FOR (p:Character) REQUIRE p.id is unique;
+create constraint FOR (p:Film) REQUIRE p.id is unique;
+create constraint FOR (p:Planet) REQUIRE p.id is unique;
+create constraint FOR (p:Organization) REQUIRE p.id is unique;
+create constraint FOR (p:Affiliation) REQUIRE p.id is unique;
+
 LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/films.csv" 
     AS row 
     UNWIND split(row.producer, ",") AS producer
@@ -9,9 +15,6 @@ LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/ne
     MERGE (p:Person {name: trim(producer)})
     MERGE (p)<-[:PRODUCED_BY]-(f);
 
-
-
--- Load the characters
 LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/characters.csv" 
     AS row
     MERGE (c:Character {name: row.name})
@@ -44,31 +47,20 @@ LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/ne
         c.died = toIntegerOrNull(row.year_died),
         c.descripcion = row.description;
 
-
--- Load the planets
 LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/planets.csv" 
     AS row
-    UNWIND split(row.terrain, ',') AS terrain
-    UNWIND split(row.climate, ',') AS climate
     UNWIND split(row.residents, ",") AS residents
     UNWIND split(row.films, ",") AS film
     MERGE (p:Planet {name: trim(row.name)})
-    MERGE (t:Terrain {name: trim(terrain)})
-    MERGE (c:Climate {name: trim(climate)})
     MERGE (f:Film {name: trim(film)})
-    MERGE (p)-[:HAS_TERRAIN]->(t)
-    MERGE (p)-[:HAS_CLIMATE]->(c)
     MERGE (p)-[:APPEARS_IN]->(f)
     SET 
         p.diameter = toIntegerOrNull(row.diameter),
         p.rotation_period = toIntegerOrNull(row.rotation_period),
         p.orbital_period = toIntegerOrNull(row.orbital_period),
-        p.gravity = toFloat(replace(row.gravity,"standard","")),
+        p.gravity = toFloatOrNull(replace(row.gravity,"standard","")),
         p.population = toFloatOrNull(row.population),
         p.surface_water = toIntegerOrNull(row.surface_water);
-
-
--- Load the organizations
 
 LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/organizations.csv" 
     AS row
@@ -91,11 +83,10 @@ LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/ne
             MERGE (o)-[:BELONGS_TO]->(a)
             )
     SET 
-        o.founded = toInteger(row.founded), 
-        o.dissolved = toInteger(row.dissolved),
+        o.founded = toIntegerOrNull(row.founded), 
+        o.dissolved = toIntegerOrNull(row.dissolved),
         o.description = row.description;
 
--- Load the species
 LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/species.csv" 
     AS row
     MERGE (s:Species {name: row.name})
@@ -104,9 +95,9 @@ LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/ne
             CASE trim(replace(row.classification, "Unknown",""))
                 WHEN "" THEN null 
                 ELSE trim(row.classification) 
-            END | 
-            MERGE (g:Genus {name: it})     
-            MERGE (s)-[:BELONGS_TO]->(g) ) 
+            END |  
+            MERGE (g:Classification {name: it})  
+            MERGE (s)-[:BELONGS_TO]->(g) )  
     FOREACH(
         it IN 
             CASE trim(replace(replace(row.homeworld, "Unknown",""), "Various", "" ))
@@ -114,92 +105,9 @@ LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/ne
                 ELSE trim(row.homeworld)
             END | 
             MERGE (p:Planet {name: it})     
-            MERGE (s)-[:IS_HOMEWORLD]->(g) ) 
+            MERGE (s)-[:IS_HOMEWORLD]->(p) ) 
     SET 
         s.designation = row.designation,
         s.average_height = toFloatOrNull(row.average_height),
         s.average_lifespan = toIntegerOrNull(row.average_lifespan),
         s.language = row.language;
-
--- Load the Vehicles
-LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/vehicles.csv" 
-    AS row
-    UNWIND CASE row.pilots 
-            WHEN "None" THEN NULL 
-            ELSE split(row.pilots, ",") 
-        END AS pilot
-    UNWIND split(row.films, ",") AS film
-    MERGE (v:Vehicle {name: row.name})
-    MERGE (m:Manufacturer {name: trim(row.manufacturer) })
-    MERGE (cl:Class {name: row.vehicle_class})
-    MERGE (p:Character {name: trim(pilot)})
-    MERGE (f:Film {name: trim(film)})
-    MERGE (v)-[:MANUFACTURED_BY]->(m)
-    MERGE (v)-[:VEHICLE_CLASS]->(cl)
-    MERGE (p)-[:PILOTED]->(v)
-    MERGE (v)-[:APPEARS_IN]->(f)
-
-    SET 
-        v.model = row.model,
-        v.cost = toFloatOrNull(row.cost_in_credits),
-        v.length = toFloatOrNull(row.length),
-        v.max_speed = toFloatOrNull(row.max_atmosphering_speed),
-        v.crew = toIntegerOrNull(row.crew),
-        v.passengers = toIntegerOrNull(row.passengers),
-        v.cargo_capacity = toFloatOrNull(row.cargo_capacity);
-
-
--- Load the Quotes and its relations with their author and film where they used it
-LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/quotes.csv" 
-    AS row 
-    MERGE (q:Quote {text: trim(row.quote)})
-    MERGE (c:Character {name: trim(row.character_name)})
-    MERGE (f:Film {name: trim(row.source)})
-    MERGE (q)-[:QUOTE_FROM]->(c)
-    MERGE (q)-[:SAID_IN]->(f);
-
--- Load the Starships and its related data
-LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/starships.csv" 
-    AS row 
-    UNWIND CASE row.pilots 
-            WHEN "None" THEN null 
-            ELSE split(row.pilots, ",") 
-        END AS pilot
-    UNWIND split(row.films, ",") AS film
-    MERGE (s:Starship {name: row.name})
-    MERGE (m:Manufacturer {name: trim(row.manufacturer) })
-    MERGE (cl:Class {name: row.starship_class})
-    MERGE (p:Character {name: trim(pilot)})
-    MERGE (f:Film {name: trim(film)})
-    MERGE (s)-[:MANUFACTURED_BY]->(m)
-    MERGE (s)-[:STARSHIP_CLASS]->(cl)
-    MERGE (p)-[:PILOTED]->(s)
-    MERGE (s)-[:APPEARS_IN]->(f)
-    SET 
-        s.model = row.model,
-        s.cost = toFloatOrNull(row.cost_in_credits),
-        s.length = toFloatOrNull(row.length),
-        s.max_speed = toFloatOrNull(row.max_atmosphering_speed),
-        s.crew = toIntegerOrNull(row.crew),
-        s.passengers = toIntegerOrNull(row.passengers),
-        s.cargo_capacity = toFloatOrNull(row.cargo_capacity),
-        s.hyperdrive_rating = toFloatOrNull(row.hyperdrive_rating);
-
--- Load the Weapons and their related data
-LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/weapons.csv" 
-    AS row 
-    UNWIND CASE row.manufacturer WHEN "Various" THEN NULL ELSE split(row.manufacturer, ",") END AS manufacturer
-    UNWIND split(row.type, "/") AS weapon_type
-    UNWIND split(row.films, ",") AS film
-    MERGE (w:Weapon {name: row.name})
-    MERGE (wt:WeaponType {name: trim(weapon_type)})
-    MERGE (m:Manufacturer {name: trim(manufacturer) })
-    MERGE (f:Film {name: trim(film)})
-    MERGE (w)-[:MANUFACTURED_BY]->(m)
-    MERGE (w)-[:WEAPON_TYPE]->(wt)
-    MERGE (w)-[:APPEARS_IN]->(f)
-    SET 
-        w.model = row.model,
-        w.cost = toFloatOrNull(row.cost_in_credits),
-        w.length = toFloatOrNull(row.length),
-        w.description = row.description
