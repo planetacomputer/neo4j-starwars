@@ -1,9 +1,9 @@
-create constraint FOR (p:Species) REQUIRE p.id is unique;
-create constraint FOR (p:Character) REQUIRE p.id is unique;
-create constraint FOR (p:Film) REQUIRE p.id is unique;
-create constraint FOR (p:Planet) REQUIRE p.id is unique;
-create constraint FOR (p:Organization) REQUIRE p.id is unique;
-create constraint FOR (p:Affiliation) REQUIRE p.id is unique;
+CREATE CONSTRAINT ON (p:Species) ASSERT p.id IS UNIQUE;
+CREATE CONSTRAINT ON (p:Character) ASSERT p.id IS UNIQUE;
+CREATE CONSTRAINT ON (p:Film) ASSERT p.id IS UNIQUE;
+CREATE CONSTRAINT ON (p:Planet) ASSERT p.id IS UNIQUE;
+CREATE CONSTRAINT ON (p:Organization) ASSERT p.id IS UNIQUE;
+CREATE CONSTRAINT ON (p:Affiliation) ASSERT p.id IS UNIQUE;
 
 LOAD CSV WITH HEADERS FROM "https://raw.githubusercontent.com/planetacomputer/neo4j-starwars/main/dataset/films.csv" 
     AS row 
